@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  --blue-primary: #1E88E5;
+  --blue-dark: #1565C0;
+  --blue-light: #E3F2FD;
+  --gray-bg: #F5F7FA;
+  --gray-border: #E2E8F0;
+  --text-primary: #1A202C;
+  --text-secondary: #4A5568;
+  --text-muted: #718096;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--gray-bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
