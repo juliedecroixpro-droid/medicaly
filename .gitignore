@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.vercel/
+
+# Large data files (RPPS source > 100MB)
+data/ps-libreacces-*.txt
+data/idel_france.json
+data/idel_france_sample.json
+data/idel_france_clean_sample.json
+data/geocode_input.csv
+data/geocode_cache.json
+
+# Keep clean + geocoded data (needed for build)
+# data/idel_france_clean.json
+# data/idel_france_geocoded.json
