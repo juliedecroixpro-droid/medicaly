@@ -80,9 +80,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <li><Link href="/" className="hover:text-[#1E88E5]">Accueil</Link></li>
                 <li><Link href="/soins" className="hover:text-[#1E88E5]">Soins à domicile</Link></li>
                 <li><Link href="/tarifs" className="hover:text-[#1E88E5]">Tarifs NGAP 2026</Link></li>
+                <li><Link href="/statistiques" className="hover:text-[#1E88E5]">Statistiques IDEL</Link></li>
                 <li><Link href="/couverture" className="hover:text-[#1E88E5]">Couverture</Link></li>
                 <li><Link href="/departement" className="hover:text-[#1E88E5]">Départements</Link></li>
                 <li><Link href="/blog" className="hover:text-[#1E88E5]">Blog</Link></li>
+                <li><Link href="/redaction" className="hover:text-[#1E88E5]">Équipe éditoriale</Link></li>
                 <li><Link href="/faq" className="hover:text-[#1E88E5]">FAQ</Link></li>
                 <li><Link href="/a-propos" className="hover:text-[#1E88E5]">À propos</Link></li>
                 <li><Link href="/contact" className="hover:text-[#1E88E5]">Contact</Link></li>
@@ -110,18 +112,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
             <div>
-              <div className="font-semibold text-[#1A202C] mb-3">Grandes villes</div>
+              <div className="font-semibold text-[#1A202C] mb-3">Infirmiere a domicile</div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                <Link href="/ville/paris-75001" className="hover:text-[#1E88E5]">Paris</Link>
-                <Link href="/ville/marseille-13001" className="hover:text-[#1E88E5]">Marseille</Link>
-                <Link href="/ville/lyon-69001" className="hover:text-[#1E88E5]">Lyon</Link>
-                <Link href="/ville/toulouse-31000" className="hover:text-[#1E88E5]">Toulouse</Link>
-                <Link href="/ville/nice-06000" className="hover:text-[#1E88E5]">Nice</Link>
-                <Link href="/ville/nantes-44000" className="hover:text-[#1E88E5]">Nantes</Link>
-                <Link href="/ville/montpellier-34000" className="hover:text-[#1E88E5]">Montpellier</Link>
-                <Link href="/ville/strasbourg-67000" className="hover:text-[#1E88E5]">Strasbourg</Link>
-                <Link href="/ville/bordeaux-33000" className="hover:text-[#1E88E5]">Bordeaux</Link>
-                <Link href="/ville/lille-59000" className="hover:text-[#1E88E5]">Lille</Link>
+                <Link href="/infirmiere-a-domicile/paris" className="hover:text-[#1E88E5]">Paris</Link>
+                <Link href="/infirmiere-a-domicile/marseille" className="hover:text-[#1E88E5]">Marseille</Link>
+                <Link href="/infirmiere-a-domicile/lyon" className="hover:text-[#1E88E5]">Lyon</Link>
+                <Link href="/infirmiere-a-domicile/toulouse" className="hover:text-[#1E88E5]">Toulouse</Link>
+                <Link href="/infirmiere-a-domicile/nice" className="hover:text-[#1E88E5]">Nice</Link>
+                <Link href="/infirmiere-a-domicile/nantes" className="hover:text-[#1E88E5]">Nantes</Link>
+                <Link href="/infirmiere-a-domicile/montpellier" className="hover:text-[#1E88E5]">Montpellier</Link>
+                <Link href="/infirmiere-a-domicile/strasbourg" className="hover:text-[#1E88E5]">Strasbourg</Link>
+                <Link href="/infirmiere-a-domicile/bordeaux" className="hover:text-[#1E88E5]">Bordeaux</Link>
+                <Link href="/infirmiere-a-domicile/lille" className="hover:text-[#1E88E5]">Lille</Link>
+                <Link href="/infirmiere-a-domicile/rennes" className="hover:text-[#1E88E5]">Rennes</Link>
+                <Link href="/infirmiere-a-domicile/grenoble" className="hover:text-[#1E88E5]">Grenoble</Link>
+                <Link href="/infirmiere-a-domicile/dijon" className="hover:text-[#1E88E5]">Dijon</Link>
+                <Link href="/infirmiere-a-domicile/angers" className="hover:text-[#1E88E5]">Angers</Link>
+                <Link href="/infirmiere-a-domicile/toulon" className="hover:text-[#1E88E5]">Toulon</Link>
+                <Link href="/infirmiere-a-domicile/reims" className="hover:text-[#1E88E5]">Reims</Link>
+                <Link href="/infirmiere-a-domicile/clermont-ferrand" className="hover:text-[#1E88E5]">Clermont-Ferrand</Link>
+                <Link href="/infirmiere-a-domicile/rouen" className="hover:text-[#1E88E5]">Rouen</Link>
+                <Link href="/infirmiere-a-domicile/perpignan" className="hover:text-[#1E88E5]">Perpignan</Link>
+                <Link href="/infirmiere-a-domicile/nimes" className="hover:text-[#1E88E5]">Nimes</Link>
               </div>
             </div>
           </div>

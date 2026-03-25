@@ -177,7 +177,7 @@ export default function VilleNursesList({ nurses, cityName, totalCount }: Props)
                 <a
                   href={`tel:${phone.replace(/\s/g, '')}`}
                   onClick={e => e.stopPropagation()}
-                  className="mt-3 flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors md:hidden"
+                  className="mt-3 flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
                 >
                   <Phone className="w-4 h-4" />
                   Appeler

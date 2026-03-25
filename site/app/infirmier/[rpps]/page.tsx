@@ -82,7 +82,20 @@ export default async function InfirmierPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="max-w-3xl mx-auto px-4 py-10">
+      {/* Sticky mobile CTA */}
+      {phone && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t border-[#E2E8F0] p-3 shadow-lg">
+          <a
+            href={`tel:${phone.replace(/\s/g, '')}`}
+            className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3.5 rounded-xl transition-colors text-lg"
+          >
+            <Phone className="w-5 h-5" />
+            Appeler maintenant
+          </a>
+        </div>
+      )}
+
+      <div className={`max-w-3xl mx-auto px-4 py-10${phone ? ' pb-24 md:pb-10' : ''}`}>
         {/* Breadcrumb */}
         <nav className="text-sm text-[#718096] mb-6 flex items-center gap-2 flex-wrap">
           <Link href="/" className="hover:text-[#1E88E5]">Accueil</Link>

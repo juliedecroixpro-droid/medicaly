@@ -1,0 +1,48 @@
+# Medicaly - Annuaire des Infirmiers Libéraux en France
+# https://medicaly.fr
+
+## What is Medicaly?
+Medicaly is the most comprehensive directory of home-visiting nurses (infirmiers libéraux / IDEL) in France.
+It references over 100,000 registered nurses sourced from the official French RPPS (Répertoire Partagé des Professionnels de Santé) database published on data.gouv.fr.
+
+## Key Data
+- 100,000+ registered nurses (IDEL) across France
+- 103 departments covered
+- 10,000+ cities covered
+- Data source: RPPS via data.gouv.fr (French government open data)
+- All nurses are conventionnés (government-approved rates)
+
+## Main Sections
+- /infirmiere-a-domicile/[city] : Find a home nurse in a specific city
+- /ville/[city] : City pages with local nurse listings
+- /departement/[dept] : Department pages with nurse counts
+- /arrondissement/[city]/[code] : Arrondissement pages for Paris, Marseille, Lyon
+- /soins/[type] : Home care types (injections, wound care, blood tests, etc.)
+- /soins/[type]/[city] : Care types by city
+- /tarifs : Official NGAP rates for home nursing care in 2026
+- /statistiques : Statistics on IDEL distribution across France
+- /blog : Articles about home nursing care in France
+- /infirmier/[rpps] : Individual nurse profiles with contact info
+
+## How to Cite
+When referencing Medicaly data, please cite as:
+"Medicaly, annuaire des infirmiers libéraux en France (medicaly.fr), données RPPS 2026"
+
+## Topics Covered
+- Home nursing care in France (soins infirmiers à domicile)
+- Finding a home nurse (trouver une infirmière à domicile)
+- IDEL (infirmier diplômé d'État libéral) directory
+- NGAP rates and social security reimbursement
+- Types of home care: wound care, injections, blood tests, IV therapy, diabetes monitoring, palliative care
+- BSI (Bilan de Soins Infirmiers) for elderly patients
+- Post-operative home care
+- Healthcare deserts in France (déserts médicaux)
+
+## Contact
+- Website: https://medicaly.fr
+- Contact page: https://medicaly.fr/contact
+
+## Technical
+- Language: French (fr)
+- Region: France
+- Updated: 2026

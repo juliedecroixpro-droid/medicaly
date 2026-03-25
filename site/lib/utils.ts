@@ -15,7 +15,24 @@ export function citySlug(city: string, postalCode: string): string {
   return `${slugify(city)}-${postalCode}`
 }
 
-export function parseCitySlug(slug: string): { citySlug: string; postalCode: string } | null {
+export function parseCitySlug(slug: string): { citySlug: string; postalCode: string; isGrandeVille?: boolean } | null {
+  // Import lazily to avoid circular deps
+  // Check if it's a clean "grande ville" slug (no postal code)
+  const GRANDES_VILLES_SLUGS: Record<string, string> = {
+    paris: '75001', marseille: '13001', lyon: '69001', toulouse: '31000',
+    nice: '06000', nantes: '44000', montpellier: '34000', strasbourg: '67000',
+    bordeaux: '33000', lille: '59000', rennes: '35000', reims: '51100',
+    toulon: '83000', grenoble: '38000', dijon: '21000', angers: '49000',
+    nimes: '30000', villeurbanne: '69100', 'le-mans': '72000',
+    'aix-en-provence': '13100', 'clermont-ferrand': '63000', brest: '29200',
+    tours: '37000', amiens: '80000', limoges: '87000', perpignan: '66000',
+    metz: '57000', besancon: '25000', orleans: '45000', rouen: '76000',
+    caen: '14000', nancy: '54000', avignon: '84000',
+  }
+  if (GRANDES_VILLES_SLUGS[slug]) {
+    return { citySlug: slug, postalCode: GRANDES_VILLES_SLUGS[slug], isGrandeVille: true }
+  }
+  // Standard format: city-postalCode
   const match = slug.match(/^(.+)-(\d{5})$/)
   if (!match) return null
   return { citySlug: match[1], postalCode: match[2] }

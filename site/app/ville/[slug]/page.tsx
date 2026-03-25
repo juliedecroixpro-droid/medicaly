@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ChevronRight, MapPin, Syringe, Heart, Stethoscope, User, Shield, Clock, FileText } from 'lucide-react'
-import { getAllCities, getNursesByCity, getDepartmentByCode, getCitiesByDepartment } from '@/lib/data'
+import { getAllCities, getNursesByCity, getNursesByMetroCity, getArrondissements, getDepartmentByCode, getCitiesByDepartment, MULTI_ARRONDISSEMENT_CITIES, GRANDES_VILLES } from '@/lib/data'
 import { parseCitySlug, departmentSlug } from '@/lib/utils'
 import { breadcrumbSchema, faqSchema, localBusinessSchema } from '@/lib/schemas'
 import VilleNursesList from '@/components/VilleNursesList'
@@ -13,26 +13,50 @@ type Props = {
 
 export async function generateStaticParams() {
   const cities = getAllCities()
-  // Top 500 cities SSG, rest are SSR (keeps Vercel build under 10 min)
-  return cities.slice(0, 500).map(c => ({ slug: c.slug }))
+  // Clean slugs for grandes villes (e.g. /ville/paris, /ville/marseille)
+  const grandesVillesParams = Object.keys(GRANDES_VILLES).map(slug => ({ slug }))
+  // Top 500 cities with postal code (SSG), rest are SSR
+  const cityParams = cities.slice(0, 500).map(c => ({ slug: c.slug }))
+  // Merge, deduplicate
+  const allSlugs = new Set([...grandesVillesParams.map(p => p.slug), ...cityParams.map(p => p.slug)])
+  return Array.from(allSlugs).map(slug => ({ slug }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const parsed = parseCitySlug(slug)
   if (!parsed) return {}
-  const nurses = getNursesByCity(parsed.postalCode)
+
+  // For metro cities (Paris/Marseille/Lyon) with clean slug, use metro data
+  const metroKey = parsed.isGrandeVille
+    ? Object.keys(MULTI_ARRONDISSEMENT_CITIES).find(key => key === parsed.citySlug)
+    : Object.keys(MULTI_ARRONDISSEMENT_CITIES).find(key => {
+        const config = MULTI_ARRONDISSEMENT_CITIES[key]
+        return config.deptCode === parsed.postalCode.slice(0, 2) &&
+          parsed.citySlug.startsWith(key)
+      })
+
+  const nurses = metroKey ? getNursesByMetroCity(metroKey) : getNursesByCity(parsed.postalCode)
   if (nurses.length === 0) return {}
-  const city = nurses[0]
+
+  const grandeVille = GRANDES_VILLES[parsed.citySlug]
+  const cityName = metroKey
+    ? metroKey.charAt(0).toUpperCase() + metroKey.slice(1)
+    : grandeVille?.displayName ?? nurses[0].city
+  const postalCode = grandeVille?.postalCode ?? parsed.postalCode
   const withPhone = nurses.filter(n => n.phone || n.phone2).length
-  const title = `Infirmiere à domicile a ${city.city} (${parsed.postalCode}) : ${nurses.length} IDEL`
-  const description = `Trouvez une infirmière à domicile a ${city.city} (${parsed.postalCode}). ${nurses.length} IDEL référencés dont ${withPhone} joignables par telephone. Soins à domicile : pansements, injections, perfusions, nursing. Annuaire gratuit Medicaly.`
+
+  // Canonical URL: use clean slug for grandes villes
+  const canonicalSlug = grandeVille ? parsed.citySlug : slug
+
+  const title = `Infirmière à domicile à ${cityName} : ${nurses.length} IDEL disponibles | Medicaly`
+  const description = `Trouvez une infirmière à domicile à ${cityName}. ${nurses.length} infirmiers libéraux référencés dont ${withPhone} joignables par téléphone. Pansements, injections, perfusions, nursing. Annuaire gratuit Medicaly.`
   return {
     title,
     description,
     openGraph: { title, description },
     alternates: {
-      canonical: `https://medicaly.fr/ville/${slug}`,
+      canonical: `https://medicaly.fr/ville/${canonicalSlug}`,
     },
   }
 }
@@ -53,10 +77,28 @@ export default async function VillePage({ params }: Props) {
   const parsed = parseCitySlug(slug)
   if (!parsed) notFound()
 
-  const nurses = getNursesByCity(parsed.postalCode)
-  if (nurses.length === 0) notFound()
+  // Detect metro cities (Paris, Marseille, Lyon) to show ALL arrondissements
+  // Supports both clean slug (/ville/paris) and postal slug (/ville/paris-75001)
+  const metroKey = parsed.isGrandeVille
+    ? Object.keys(MULTI_ARRONDISSEMENT_CITIES).find(key => key === parsed.citySlug)
+    : Object.keys(MULTI_ARRONDISSEMENT_CITIES).find(key => {
+        const config = MULTI_ARRONDISSEMENT_CITIES[key]
+        return config.deptCode === parsed.postalCode.slice(0, 2) &&
+          parsed.citySlug.startsWith(key)
+      })
 
-  const cityName = nurses[0].city
+  const nurses = metroKey ? getNursesByMetroCity(metroKey) : getNursesByCity(parsed.postalCode)
+  if (nurses.length === 0) notFound()
+  const arrondissements = metroKey ? getArrondissements(metroKey) : []
+
+  // Display name: use GRANDES_VILLES displayName when available
+  const grandeVille = GRANDES_VILLES[parsed.citySlug]
+  const cityName = metroKey
+    ? metroKey.charAt(0).toUpperCase() + metroKey.slice(1)
+    : grandeVille?.displayName ?? nurses[0].city
+
+  // Canonical: always use clean slug for grandes villes
+  const canonicalSlug = grandeVille ? parsed.citySlug : slug
   const deptCode = nurses[0].department
   const deptName = nurses[0].department_name
   const dept = getDepartmentByCode(deptCode)
@@ -92,7 +134,7 @@ export default async function VillePage({ params }: Props) {
     { name: 'Accueil', url: baseUrl },
     { name: 'Départements', url: `${baseUrl}/departement` },
     { name: deptName, url: `${baseUrl}/departement/${deptSlugStr}` },
-    { name: cityName, url: `${baseUrl}/ville/${slug}` },
+    { name: cityName, url: `${baseUrl}/ville/${canonicalSlug}` },
   ])
 
   const faqLd = faqSchema(faqs)
@@ -102,7 +144,7 @@ export default async function VillePage({ params }: Props) {
     postalCode: parsed.postalCode,
     department: deptName,
     nurseCount: nurses.length,
-    url: `${baseUrl}/ville/${slug}`,
+    url: `${baseUrl}/ville/${canonicalSlug}`,
   })
 
   const nearbyCities = getCitiesByDepartment(deptCode)
@@ -213,6 +255,37 @@ export default async function VillePage({ params }: Props) {
           Les {nurses.length} infirmier(e)s à domicile a {cityName}
         </h2>
         <VilleNursesList nurses={nursesForClient} cityName={cityName} totalCount={nurses.length} />
+
+        {/* Arrondissements for metro cities */}
+        {metroKey && arrondissements.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-[#E2E8F0] dark:border-gray-700 p-6 mb-8 mt-8">
+            <h2 className="text-xl font-bold text-[#1A202C] dark:text-gray-100 mb-2">
+              Par arrondissement
+            </h2>
+            <p className="text-sm text-[#718096] dark:text-gray-400 mb-4">
+              Trouvez un(e) infirmier(e) a domicile dans votre arrondissement de {cityName}.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {arrondissements.map(arr => {
+                const num = parseInt(arr.postalCode.slice(-2), 10)
+                const ordinal = num === 1 ? '1er' : `${num}e`
+                return (
+                  <Link
+                    key={arr.postalCode}
+                    href={`/arrondissement/${metroKey}/${arr.postalCode}`}
+                    className="flex flex-col items-center p-4 rounded-xl border border-[#E2E8F0] dark:border-gray-700 hover:border-[#1E88E5] hover:bg-[#E3F2FD] dark:hover:bg-gray-700 transition-all group text-center"
+                  >
+                    <div className="font-semibold text-[#1A202C] dark:text-gray-100 group-hover:text-[#1E88E5] text-sm">
+                      {cityName} {ordinal}
+                    </div>
+                    <div className="text-xs text-[#718096] dark:text-gray-400 mt-1">{arr.postalCode}</div>
+                    <div className="text-xs font-medium text-[#1E88E5] mt-2">{arr.count} IDEL</div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* FAQ */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-[#E2E8F0] dark:border-gray-700 p-6 mb-8 mt-8">

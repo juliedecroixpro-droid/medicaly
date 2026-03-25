@@ -43,8 +43,13 @@ export default async function BlogPostPage({ params }: Props) {
     headline: post.title,
     description: post.description,
     datePublished: post.date,
+    dateModified: post.date,
     image: `https://medicaly.fr/blog/${slug}/opengraph-image`,
-    author: { '@type': 'Organization', name: 'Medicaly' },
+    author: {
+      '@type': 'Person',
+      name: 'Équipe éditoriale Medicaly',
+      url: 'https://medicaly.fr/redaction',
+    },
     publisher: { '@type': 'Organization', name: 'Medicaly', url: 'https://medicaly.fr', logo: { '@type': 'ImageObject', url: 'https://medicaly.fr/icon.svg' } },
     mainEntityOfPage: `https://medicaly.fr/blog/${slug}`,
   }
@@ -121,23 +126,42 @@ export default async function BlogPostPage({ params }: Props) {
 
         <article className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
           {/* Hero image */}
-          <div
-            className="relative h-48 md:h-64 flex items-center justify-center"
-            style={{ background: `linear-gradient(135deg, ${post.heroColor}, ${post.heroColorTo})` }}
-          >
-            <span className="text-7xl md:text-8xl opacity-80">{post.heroEmoji}</span>
-            <div className="absolute top-4 left-4">
-              <span className="bg-white/20 text-white text-xs font-medium px-3 py-1 rounded-full backdrop-blur-sm">
-                {post.category}
-              </span>
+          {post.heroImage ? (
+            <div className="relative h-56 md:h-72 overflow-hidden">
+              <img
+                src={post.heroImage}
+                alt={post.title}
+                className="w-full h-full object-cover"
+                loading="eager"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+              <div className="absolute top-4 left-4">
+                <span className="bg-white/90 text-[#1A202C] text-xs font-medium px-3 py-1 rounded-full">
+                  {post.category}
+                </span>
+              </div>
             </div>
-            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent" />
-          </div>
+          ) : (
+            <div
+              className="relative h-48 md:h-64 flex items-center justify-center"
+              style={{ background: `linear-gradient(135deg, ${post.heroColor}, ${post.heroColorTo})` }}
+            >
+              <span className="text-7xl md:text-8xl opacity-80">{post.heroEmoji}</span>
+              <div className="absolute top-4 left-4">
+                <span className="bg-white/20 text-white text-xs font-medium px-3 py-1 rounded-full backdrop-blur-sm">
+                  {post.category}
+                </span>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent" />
+            </div>
+          )}
 
           <div className="p-6 md:p-8">
             <div className="flex items-center gap-2 text-xs text-[#718096] mb-4 flex-wrap">
               <Calendar className="w-3 h-3" />
               {new Date(post.date).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}
+              <span className="mx-1">·</span>
+              <span>Mis à jour le {new Date(post.date).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
               <span className="mx-1">·</span>
               <span>{post.category}</span>
               <span className="mx-1">·</span>
@@ -162,6 +186,43 @@ export default async function BlogPostPage({ params }: Props) {
             )}
 
             <div className="text-sm" dangerouslySetInnerHTML={{ __html: linkedContent }} />
+
+            {/* Sources */}
+            <div className="mt-8 pt-6 border-t border-[#E2E8F0]">
+              <div className="text-xs font-semibold text-[#718096] mb-3 uppercase tracking-wide">Sources et références</div>
+              <div className="bg-[#F7FAFC] rounded-lg p-4 text-xs text-[#718096] space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <a href="https://www.ameli.fr" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-[#1E88E5] transition-colors">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1E88E5] flex-shrink-0" />
+                    ameli.fr - Assurance Maladie
+                  </a>
+                  <a href="https://www.service-public.fr" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-[#1E88E5] transition-colors">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1E88E5] flex-shrink-0" />
+                    service-public.fr
+                  </a>
+                  <a href="https://www.has-sante.fr" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-[#1E88E5] transition-colors">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1E88E5] flex-shrink-0" />
+                    has-sante.fr - Haute Autorité de Santé
+                  </a>
+                  <a href="https://www.legifrance.gouv.fr" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-[#1E88E5] transition-colors">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#1E88E5] flex-shrink-0" />
+                    legifrance.gouv.fr
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Editorial link */}
+            <div className="mt-4 text-xs text-[#718096] flex items-center gap-2">
+              <span>Rédigé par</span>
+              <Link href="/redaction" className="text-[#1E88E5] hover:underline font-medium">
+                l&apos;équipe éditoriale Medicaly
+              </Link>
+              <span className="mx-1">·</span>
+              <Link href="/redaction" className="text-[#1E88E5] hover:underline">
+                Découvrir notre équipe éditoriale
+              </Link>
+            </div>
           </div>
         </article>
 
@@ -187,12 +248,18 @@ export default async function BlogPostPage({ params }: Props) {
                 href={`/blog/${p.slug}`}
                 className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden hover:border-[#1E88E5] hover:shadow-sm transition-all group"
               >
-                <div
-                  className="h-24 flex items-center justify-center"
-                  style={{ background: `linear-gradient(135deg, ${p.heroColor}, ${p.heroColorTo})` }}
-                >
-                  <span className="text-3xl opacity-80">{p.heroEmoji}</span>
-                </div>
+                {p.heroImage ? (
+                  <div className="h-24 overflow-hidden">
+                    <img src={p.heroImage} alt={p.title} className="w-full h-full object-cover" loading="lazy" />
+                  </div>
+                ) : (
+                  <div
+                    className="h-24 flex items-center justify-center"
+                    style={{ background: `linear-gradient(135deg, ${p.heroColor}, ${p.heroColorTo})` }}
+                  >
+                    <span className="text-3xl opacity-80">{p.heroEmoji}</span>
+                  </div>
+                )}
                 <div className="p-3">
                   <h3 className="font-semibold text-sm text-[#1A202C] group-hover:text-[#1E88E5] transition-colors mb-1 line-clamp-2">
                     {p.title}

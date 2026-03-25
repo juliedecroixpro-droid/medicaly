@@ -1,12 +1,15 @@
 import Link from 'next/link'
 import { MapPin, Users, Phone, ChevronRight, Shield, Heart, Syringe, FileText, Stethoscope, User, Clock, CheckCircle } from 'lucide-react'
 import SearchBar from '@/components/SearchBar'
+import GeolocButton from '@/components/GeolocButton'
 import { getAllDepartments, getStats } from '@/lib/data'
+import { TOP_CITIES } from '@/lib/cities-top'
 
 export default function HomePage() {
   const departments = getAllDepartments()
   const stats = getStats()
   const topDepartments = [...departments].sort((a, b) => b.count - a.count).slice(0, 12)
+  const topCities = TOP_CITIES.slice(0, 20)
 
   const soins = [
     { icon: Heart, name: 'Pansements', href: '/soins/pansements' },
@@ -39,6 +42,9 @@ export default function HomePage() {
             {stats.totalDepartments} départements
           </p>
           <SearchBar placeholder="Ville, code postal ou nom d'infirmier..." size="lg" />
+          <div className="mt-4">
+            <GeolocButton />
+          </div>
         </div>
       </section>
 
@@ -189,6 +195,28 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Villes populaires */}
+      <section className="max-w-6xl mx-auto px-4 py-14">
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-bold text-[#1A202C]">Villes populaires</h2>
+          <Link href="/couverture" className="text-[#1E88E5] text-sm font-medium hover:underline flex items-center gap-1">
+            Toutes les villes <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {topCities.map(city => (
+            <Link
+              key={city.slug}
+              href={`/infirmiere-a-domicile/${city.slug}`}
+              className="flex items-center gap-2 bg-white rounded-xl p-4 border border-[#E2E8F0] hover:border-[#1E88E5] hover:shadow-md transition-all group"
+            >
+              <MapPin className="w-4 h-4 text-[#1E88E5] flex-shrink-0" />
+              <span className="text-sm font-medium text-[#1A202C] group-hover:text-[#1E88E5] truncate">{city.name}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* Testimonials */}
       <section className="max-w-6xl mx-auto px-4 py-14">
         <h2 className="text-2xl font-bold text-[#1A202C] text-center mb-8">Ce qu'ils pensent de Medicaly</h2>
@@ -239,6 +267,38 @@ export default function HomePage() {
           </div>
         </div>
         <p className="text-center text-xs text-[#718096] mt-6">Temoignages illustratifs</p>
+      </section>
+
+      {/* SEO text block */}
+      <section className="max-w-4xl mx-auto px-4 py-14">
+        <h2 className="text-2xl font-bold text-[#1A202C] mb-6">
+          Trouvez une infirmiere a domicile en France
+        </h2>
+        <div className="bg-white rounded-xl border border-[#E2E8F0] p-8 space-y-4 text-sm text-[#4A5568] leading-relaxed">
+          <p>
+            Medicaly est l&apos;annuaire de référence des infirmiers libéraux (IDEL) en France.
+            Avec <strong>{stats.totalNurses.toLocaleString('fr-FR')} infirmiers libéraux</strong> référencés
+            dans <strong>{stats.totalDepartments} départements</strong> et plus de{' '}
+            <strong>{stats.totalCities.toLocaleString('fr-FR')} villes couvertes</strong>, Medicaly vous donne
+            acces aux coordonnées de tous les IDEL de France, gratuitement et sans engagement.
+          </p>
+          <p>
+            Besoin de soins infirmiers a domicile ? Que ce soit pour un pansement apres une operation,
+            une injection d&apos;anticoagulant, une prise de sang, une perfusion, une aide a la toilette (nursing)
+            ou un suivi du diabete, les infirmiers libéraux se deplacent directement a votre domicile
+            sur prescription medicale.
+          </p>
+          <p>
+            Les soins infirmiers a domicile sont pris en charge par l&apos;Assurance Maladie : 60% du tarif
+            conventionnel, et 100% en cas d&apos;Affection Longue Duree (ALD). La plupart des IDEL pratiquent
+            le tiers payant. Vous n&apos;avancez généralement rien.
+          </p>
+          <p>
+            Recherchez par ville, code postal ou nom : Medicaly vous met directement en relation
+            avec les infirmiers libéraux de votre quartier. Consultez leur fiche, appelez-les et
+            organisez votre prise en charge en quelques minutes.
+          </p>
+        </div>
       </section>
 
       {/* CTA final */}

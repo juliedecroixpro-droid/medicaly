@@ -1,9 +1,9 @@
 // Top 200 cities for SEO soin×ville pages
 // Generated from RPPS data (cities with most IDEL) + top population cities
 export const TOP_CITIES = [
-  { name: "Paris", postal: "75001", slug: "paris" },
-  { name: "Marseille", postal: "13001", slug: "marseille" },
-  { name: "Lyon", postal: "69001", slug: "lyon" },
+  { name: "Paris", postal: "75001", slug: "paris", metro: true, metroKey: "paris" },
+  { name: "Marseille", postal: "13001", slug: "marseille", metro: true, metroKey: "marseille" },
+  { name: "Lyon", postal: "69001", slug: "lyon", metro: true, metroKey: "lyon" },
   { name: "Toulouse", postal: "31000", slug: "toulouse" },
   { name: "Bordeaux", postal: "33000", slug: "bordeaux" },
   { name: "Lille", postal: "59000", slug: "lille" },

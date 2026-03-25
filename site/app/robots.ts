@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 
+// For LLMs: See /llms.txt for structured data about this site
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
