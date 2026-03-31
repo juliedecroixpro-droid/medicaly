@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { slugify, departmentSlug, citySlug } from './utils'
+import { slugify, departmentSlug, citySlug, nurseSlug } from './utils'
 
 export interface Nurse {
   rpps: string
@@ -217,6 +217,43 @@ export function getArrondissements(cityKey: string): { name: string; postalCode:
 
 export function getNurseByRpps(rpps: string): Nurse | undefined {
   return loadNurses().find(n => n.rpps === rpps)
+}
+
+// Slug index for O(1) lookup + collision handling
+let _slugIndex: Map<string, Nurse> | null = null
+let _rppsToSlug: Map<string, string> | null = null
+
+function buildSlugIndex() {
+  if (_slugIndex && _rppsToSlug) return
+  _slugIndex = new Map()
+  _rppsToSlug = new Map()
+  const collisionCount = new Map<string, number>()
+
+  for (const nurse of loadNurses()) {
+    let slug = nurseSlug(nurse.first_name, nurse.last_name, nurse.city)
+    if (_slugIndex.has(slug)) {
+      const count = (collisionCount.get(slug) || 1) + 1
+      collisionCount.set(slug, count)
+      slug = `${slug}-${count}`
+    }
+    _slugIndex.set(slug, nurse)
+    _rppsToSlug.set(nurse.rpps, slug)
+  }
+}
+
+export function getNurseBySlug(slug: string): Nurse | undefined {
+  buildSlugIndex()
+  return _slugIndex!.get(slug)
+}
+
+export function getNurseSlug(nurse: Nurse): string {
+  buildSlugIndex()
+  return _rppsToSlug!.get(nurse.rpps) || nurseSlug(nurse.first_name, nurse.last_name, nurse.city)
+}
+
+export function getRppsToSlugMap(): Map<string, string> {
+  buildSlugIndex()
+  return _rppsToSlug!
 }
 
 export function getNearbyNurses(postalCode: string, excludeRpps: string, limit = 5): Nurse[] {

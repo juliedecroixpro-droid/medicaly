@@ -2,18 +2,20 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Phone, Mail, MapPin, ChevronRight, User, Building2, CreditCard, Heart, Syringe, Stethoscope, Clock, Shield, FileText } from 'lucide-react'
-import { getNurseByRpps, getDepartmentByCode, getNearbyNurses } from '@/lib/data'
+import { getNurseBySlug, getNurseByRpps, getDepartmentByCode, getNearbyNurses, getNurseSlug } from '@/lib/data'
 import { formatPhone, genderLabel, genderLabelFull, citySlug, departmentSlug } from '@/lib/utils'
 import Avatar from '@/components/Avatar'
 
 type Props = {
-  params: Promise<{ rpps: string }>
+  params: Promise<{ slug: string }>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { rpps } = await params
-  const nurse = getNurseByRpps(rpps)
+  const { slug } = await params
+  // Support both new slug and legacy RPPS URLs
+  const nurse = getNurseBySlug(slug) || getNurseByRpps(slug)
   if (!nurse) return {}
+  const nurseUrl = getNurseSlug(nurse)
   const title = `${genderLabel(nurse.gender)} ${nurse.first_name} ${nurse.last_name} - Infirmier${nurse.gender === 'F' ? 'e' : ''} a ${nurse.city}`
   return {
     title,
@@ -23,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: `Contactez ${nurse.first_name} ${nurse.last_name}, infirmier${nurse.gender === 'F' ? 'e' : ''} libéral${nurse.gender === 'F' ? 'e' : ''} a ${nurse.city}. Soins infirmiers à domicile.`,
     },
     alternates: {
-      canonical: `https://medicaly.fr/infirmier/${rpps}`,
+      canonical: `https://medicaly.fr/infirmier/${nurseUrl}`,
     },
   }
 }
@@ -40,9 +42,18 @@ const SOINS = [
 ]
 
 export default async function InfirmierPage({ params }: Props) {
-  const { rpps } = await params
-  const nurse = getNurseByRpps(rpps)
-  if (!nurse) notFound()
+  const { slug } = await params
+  // Support both new slug and legacy RPPS URLs
+  let nurse = getNurseBySlug(slug)
+  if (!nurse) {
+    // Try legacy RPPS lookup and redirect
+    nurse = getNurseByRpps(slug)
+    if (nurse) {
+      const { redirect } = await import('next/navigation')
+      redirect(`/infirmier/${getNurseSlug(nurse)}`)
+    }
+    notFound()
+  }
 
   const dept = getDepartmentByCode(nurse.department)
   const deptSlugStr = dept
@@ -68,7 +79,7 @@ export default async function InfirmierPage({ params }: Props) {
     },
     ...(phone && { telephone: phone.replace(/\s/g, '') }),
     ...(nurse.email && { email: nurse.email }),
-    url: `https://medicaly.fr/infirmier/${nurse.rpps}`,
+    url: `https://medicaly.fr/infirmier/${getNurseSlug(nurse)}`,
     identifier: nurse.rpps,
     availableService: SOINS.map(s => ({
       '@type': 'MedicalProcedure',
@@ -277,7 +288,7 @@ export default async function InfirmierPage({ params }: Props) {
                 return (
                   <Link
                     key={n.rpps}
-                    href={`/infirmier/${n.rpps}`}
+                    href={`/infirmier/${getNurseSlug(n)}`}
                     className="flex items-center gap-4 bg-white rounded-xl p-4 border border-[#E2E8F0] hover:border-[#1E88E5] hover:shadow-sm transition-all group"
                   >
                     <Avatar name={`${n.first_name} ${n.last_name}`} size="sm" />

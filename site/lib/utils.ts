@@ -7,6 +7,10 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+export function nurseSlug(firstName: string, lastName: string, city: string): string {
+  return `${slugify(firstName)}-${slugify(lastName)}-${slugify(city)}`
+}
+
 export function departmentSlug(code: string, name: string): string {
   return `${code}-${slugify(name)}`
 }

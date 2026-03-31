@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Phone, MapPin, User, Building2, ChevronRight, FileText, ArrowLeft } from 'lucide-react'
-import { getNursesByCity, getArrondissements, MULTI_ARRONDISSEMENT_CITIES } from '@/lib/data'
+import { getNursesByCity, getArrondissements, getNurseSlug, MULTI_ARRONDISSEMENT_CITIES } from '@/lib/data'
 import { formatPhone, genderLabel } from '@/lib/utils'
 import { breadcrumbSchema, faqSchema } from '@/lib/schemas'
 import { generateIntro, generateFAQ } from '@/lib/city-content'
@@ -87,6 +87,7 @@ export default async function ArrondissementPage({ params }: Props) {
 
   const nursesForClient = nurses.map(n => ({
     rpps: n.rpps,
+    slug: getNurseSlug(n),
     gender: n.gender,
     last_name: n.last_name,
     first_name: n.first_name,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { searchNurses, getAllCities } from '@/lib/data'
+import { searchNurses, getAllCities, getNurseSlug } from '@/lib/data'
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get('q')?.trim() || ''
@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
   // Search nurses
   const nurses = searchNurses(q).slice(0, 5).map(n => ({
     rpps: n.rpps,
+    slug: getNurseSlug(n),
     firstName: n.first_name,
     lastName: n.last_name,
     city: n.city,

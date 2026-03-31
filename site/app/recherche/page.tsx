@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ChevronRight, Phone, MapPin, Building2, Search } from 'lucide-react'
-import { searchNurses } from '@/lib/data'
+import { searchNurses, getNurseSlug } from '@/lib/data'
 import { formatPhone, genderLabel, citySlug } from '@/lib/utils'
 import SearchBar from '@/components/SearchBar'
 import Avatar from '@/components/Avatar'
@@ -66,7 +66,7 @@ export default async function RecherchePage({ searchParams }: Props) {
             return (
               <Link
                 key={nurse.rpps}
-                href={`/infirmier/${nurse.rpps}`}
+                href={`/infirmier/${getNurseSlug(nurse)}`}
                 className="bg-white rounded-xl p-5 border border-[#E2E8F0] hover:border-[#1E88E5] hover:shadow-md transition-all group flex items-start gap-4"
               >
                 <Avatar name={`${nurse.first_name} ${nurse.last_name}`} size="md" />

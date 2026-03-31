@@ -7,6 +7,7 @@ import Avatar from './Avatar'
 
 interface Nurse {
   rpps: string
+  slug?: string
   gender: string
   last_name: string
   first_name: string
@@ -143,7 +144,7 @@ export default function VilleNursesList({ nurses, cityName, totalCount }: Props)
               key={nurse.rpps}
               className="bg-white dark:bg-gray-800 border border-[#E2E8F0] dark:border-gray-700 rounded-xl p-4 hover:border-[#1E88E5] hover:shadow-md transition-all"
             >
-              <Link href={`/infirmier/${nurse.rpps}`} className="block">
+              <Link href={`/infirmier/${nurse.slug || nurse.rpps}`} className="block">
                 <div className="flex items-start gap-3">
                   <Avatar name={fullName} size="md" />
                   <div className="flex-1 min-w-0">

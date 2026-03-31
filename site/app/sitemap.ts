@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { getAllDepartments, getAllCities, loadNurses, getArrondissements } from '@/lib/data'
+import { getAllDepartments, getAllCities, loadNurses, getArrondissements, getNurseSlug } from '@/lib/data'
 import { TOP_CITIES } from '@/lib/cities-top'
 import { BLOG_POSTS } from '@/lib/blog'
 import { SOINS } from '@/lib/soins'
@@ -90,7 +90,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     .filter(n => n.phone || n.phone2)
     .slice(0, 5000)
     .map(n => ({
-      url: `${baseUrl}/infirmier/${n.rpps}`,
+      url: `${baseUrl}/infirmier/${getNurseSlug(n)}`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,
       priority: 0.4,

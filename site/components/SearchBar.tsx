@@ -14,6 +14,7 @@ interface CityResult {
 
 interface NurseResult {
   rpps: string
+  slug?: string
   firstName: string
   lastName: string
   city: string
@@ -166,7 +167,7 @@ export default function SearchBar({
                   key={nurse.rpps}
                   onClick={() => {
                     setShowDropdown(false)
-                    router.push(`/infirmier/${nurse.rpps}`)
+                    router.push(`/infirmier/${nurse.slug || nurse.rpps}`)
                   }}
                   className="w-full px-4 py-3 flex items-center gap-3 hover:bg-[#EBF5FB] transition-colors text-left"
                 >

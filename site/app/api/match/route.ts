@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getNursesByCity, getNursesByMetroCity, type Nurse } from '@/lib/data'
+import { getNursesByCity, getNursesByMetroCity, getNurseSlug, type Nurse } from '@/lib/data'
 
 // Haversine distance in km
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -122,6 +122,7 @@ export async function GET(request: NextRequest) {
 
   const result = sortedNurses.slice(0, 20).map(({ nurse: n, distance }) => ({
     rpps: n.rpps,
+    slug: getNurseSlug(n),
     gender: n.gender,
     firstName: n.first_name,
     lastName: n.last_name,

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { ChevronRight, Phone, MapPin, User, Building2, FileText } from 'lucide-react'
 import { SOINS, getSoin } from '@/lib/soins'
 import { TOP_CITIES } from '@/lib/cities-top'
-import { getNursesByCity } from '@/lib/data'
+import { getNursesByCity, getNurseSlug } from '@/lib/data'
 import { formatPhone, genderLabel, citySlug } from '@/lib/utils'
 import { breadcrumbSchema, faqSchema } from '@/lib/schemas'
 
@@ -125,7 +125,7 @@ export default async function SoinVillePage({ params }: Props) {
           {nurses.slice(0, 20).map(nurse => {
             const phone = nurse.phone || nurse.phone2
             return (
-              <Link key={nurse.rpps} href={`/infirmier/${nurse.rpps}`} className="bg-white rounded-xl p-5 border border-[#E2E8F0] hover:border-[#1E88E5] hover:shadow-md transition-all group">
+              <Link key={nurse.rpps} href={`/infirmier/${getNurseSlug(nurse)}`} className="bg-white rounded-xl p-5 border border-[#E2E8F0] hover:border-[#1E88E5] hover:shadow-md transition-all group">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-full bg-[#E3F2FD] flex items-center justify-center flex-shrink-0">
                     <User className="w-6 h-6 text-[#1E88E5]" />

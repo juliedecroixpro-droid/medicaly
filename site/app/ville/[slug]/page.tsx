@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ChevronRight, MapPin, Syringe, Heart, Stethoscope, User, Shield, Clock, FileText } from 'lucide-react'
-import { getAllCities, getNursesByCity, getNursesByMetroCity, getArrondissements, getDepartmentByCode, getCitiesByDepartment, MULTI_ARRONDISSEMENT_CITIES, GRANDES_VILLES } from '@/lib/data'
+import { getAllCities, getNursesByCity, getNursesByMetroCity, getArrondissements, getDepartmentByCode, getCitiesByDepartment, getNurseSlug, MULTI_ARRONDISSEMENT_CITIES, GRANDES_VILLES } from '@/lib/data'
 import { parseCitySlug, departmentSlug } from '@/lib/utils'
 import { breadcrumbSchema, faqSchema, localBusinessSchema } from '@/lib/schemas'
 import VilleNursesList from '@/components/VilleNursesList'
@@ -154,6 +154,7 @@ export default async function VillePage({ params }: Props) {
 
   const nursesForClient = nurses.map(n => ({
     rpps: n.rpps,
+    slug: getNurseSlug(n),
     gender: n.gender,
     last_name: n.last_name,
     first_name: n.first_name,

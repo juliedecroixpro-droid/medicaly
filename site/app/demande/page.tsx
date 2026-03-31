@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   ChevronRight, CheckCircle, Phone, MapPin, FileText, User,
-  Clock, AlertCircle, Calendar, ArrowLeft, Search, Stethoscope,
-  Heart, Syringe, Shield
+  Clock, AlertCircle, Calendar, ArrowLeft, Stethoscope,
+  Heart, Shield
 } from 'lucide-react'
 
 // --- Types ---
 interface MatchedNurse {
   rpps: string
+  slug: string
   gender: string
   firstName: string
   lastName: string
@@ -22,66 +23,49 @@ interface MatchedNurse {
   distance: number | null
 }
 
-// --- Care types ---
-const SOINS_CATEGORIES = [
-  {
-    category: 'Soins courants',
-    icon: '💉',
-    items: [
-      { id: 'pansement', label: 'Pansement (simple ou complexe)' },
-      { id: 'injection', label: 'Injection (anticoagulant, insuline, vaccin...)' },
-      { id: 'prise-de-sang', label: 'Prise de sang / Bilan sanguin' },
-      { id: 'ablation', label: 'Ablation fils de suture / agrafes' },
-    ],
-  },
-  {
-    category: 'Soins spécialisés',
-    icon: '🏥',
-    items: [
-      { id: 'perfusion', label: 'Perfusion à domicile' },
-      { id: 'chimio', label: 'Chimiothérapie à domicile' },
-      { id: 'sonde-stomie', label: 'Soins de sonde / stomie' },
-      { id: 'oxygenotherapie', label: 'Oxygénothérapie' },
-      { id: 'palliatif', label: 'Soins palliatifs' },
-    ],
-  },
-  {
-    category: 'Soins quotidiens',
-    icon: '🏠',
-    items: [
-      { id: 'nursing', label: 'Aide à la toilette / Nursing' },
-      { id: 'medicaments', label: 'Distribution de médicaments / Pilulier' },
-      { id: 'diabete', label: 'Surveillance glycémie / Diabète' },
-      { id: 'constantes', label: 'Surveillance constantes (tension, pouls...)' },
-      { id: 'post-op', label: 'Soins post-opératoires' },
-    ],
-  },
+// --- Care types (langage patient) ---
+const SOINS_ITEMS = [
+  { id: 'pansement', label: 'Pansement', desc: 'Simple ou complexe, post-opératoire', icon: '🩹' },
+  { id: 'injection', label: 'Piqûre / Injection', desc: 'Anticoagulant, insuline, vaccin...', icon: '💉' },
+  { id: 'prise-de-sang', label: 'Prise de sang', desc: 'Bilan sanguin à domicile', icon: '🩸' },
+  { id: 'ablation', label: 'Retrait de fils / agrafes', desc: 'Après une opération', icon: '✂️' },
+  { id: 'perfusion', label: 'Perfusion', desc: 'Perfusion intraveineuse à domicile', icon: '💧' },
+  { id: 'nursing', label: 'Aide à la toilette', desc: 'Nursing, hygiène quotidienne', icon: '🛁' },
+  { id: 'medicaments', label: 'Médicaments / Pilulier', desc: 'Préparation et distribution', icon: '💊' },
+  { id: 'diabete', label: 'Diabète / Glycémie', desc: 'Surveillance, injection insuline', icon: '📊' },
+  { id: 'constantes', label: 'Prise de tension / Constantes', desc: 'Tension, pouls, température', icon: '❤️‍🩹' },
+  { id: 'post-op', label: 'Soins post-opératoires', desc: 'Surveillance après chirurgie', icon: '🏥' },
+  { id: 'chimio', label: 'Chimiothérapie', desc: 'Traitement anticancéreux à domicile', icon: '⚕️' },
+  { id: 'sonde-stomie', label: 'Sonde / Stomie', desc: 'Soins urinaires ou digestifs', icon: '🔧' },
+  { id: 'palliatif', label: 'Soins palliatifs', desc: 'Accompagnement fin de vie', icon: '🤝' },
+  { id: 'autre', label: 'Autre soin', desc: 'Je ne sais pas / autre besoin', icon: '❓' },
 ]
 
 const URGENCY_OPTIONS = [
-  { id: 'urgent', label: "C'est urgent (dans les 24h)", color: 'red' },
-  { id: 'soon', label: 'Dans les prochains jours', color: 'orange' },
-  { id: 'planned', label: 'Soins planifiés / récurrents', color: 'blue' },
+  { id: 'urgent', label: "C'est urgent", desc: 'Dans les prochaines 24 heures', icon: '🔴', color: 'red' },
+  { id: 'soon', label: 'Dans les prochains jours', desc: 'Pas immédiat mais assez vite', icon: '🟠', color: 'orange' },
+  { id: 'planned', label: 'Soins planifiés', desc: 'Récurrents ou programmés', icon: '🔵', color: 'blue' },
 ]
 
 const TIME_SLOTS = [
-  { id: 'morning', label: 'Matin (7h-12h)', icon: '🌅' },
-  { id: 'afternoon', label: 'Après-midi (12h-18h)', icon: '☀️' },
-  { id: 'evening', label: 'Soir (18h-20h)', icon: '🌆' },
-  { id: 'flexible', label: 'Flexible / Peu importe', icon: '🔄' },
+  { id: 'morning', label: 'Matin', desc: '7h - 12h', icon: '🌅' },
+  { id: 'afternoon', label: 'Après-midi', desc: '12h - 18h', icon: '☀️' },
+  { id: 'evening', label: 'Soir', desc: '18h - 20h', icon: '🌆' },
+  { id: 'flexible', label: 'Peu importe', desc: 'Je suis flexible', icon: '🔄' },
 ]
 
 function formatPhone(phone: string): string {
   const clean = phone.replace(/\D/g, '')
-  if (clean.length === 10) {
-    return clean.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5')
-  }
+  if (clean.length === 10) return clean.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5')
   return phone
 }
 
 function genderTitle(gender: string): string {
   return gender === 'F' ? 'Mme' : 'M.'
 }
+
+// Total steps (excluding results)
+const TOTAL_STEPS = 6
 
 export default function DemandePage() {
   const [step, setStep] = useState(1)
@@ -93,7 +77,6 @@ export default function DemandePage() {
   const [adresse, setAdresse] = useState('')
   const [startDate, setStartDate] = useState('')
   const [timeSlots, setTimeSlots] = useState<string[]>([])
-  const [lieu, setLieu] = useState('domicile')
   const [pourQui, setPourQui] = useState('moi')
   const [form, setForm] = useState({ prenom: '', nom: '', tel: '', email: '', message: '' })
   const [proches, setProches] = useState({ prenom: '', nom: '', lien: '' })
@@ -103,12 +86,16 @@ export default function DemandePage() {
   const [loading, setLoading] = useState(false)
   const [geoLoading, setGeoLoading] = useState(false)
 
-  // Read URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('cp')) setCp(params.get('cp')!)
     if (params.get('ville')) setVille(params.get('ville')!)
   }, [])
+
+  // Scroll to top on step change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [step])
 
   const toggleSoin = (id: string) => {
     setSelectedSoins(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id])
@@ -118,26 +105,69 @@ export default function DemandePage() {
     setTimeSlots(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id])
   }
 
+  const [geoError, setGeoError] = useState('')
+
   const handleGeolocate = async () => {
-    if (!navigator.geolocation) return
+    if (!navigator.geolocation) {
+      setGeoError('La géolocalisation n\'est pas disponible sur votre appareil.')
+      return
+    }
     setGeoLoading(true)
+    setGeoError('')
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        const { latitude, longitude } = pos.coords
+        let found = false
+
+        // Try BAN API first (France only)
         try {
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json&addressdetails=1`,
-            { headers: { 'Accept-Language': 'fr' } }
+            `https://api-adresse.data.gouv.fr/reverse/?lon=${longitude}&lat=${latitude}&limit=1`
           )
           const data = await res.json()
-          if (data.address?.postcode) setCp(data.address.postcode)
-          if (data.address?.city || data.address?.town || data.address?.village) {
-            setVille(data.address.city || data.address.town || data.address.village)
+          if (data.features?.length > 0) {
+            const props = data.features[0].properties
+            if (props.postcode) { setCp(props.postcode); found = true }
+            if (props.city) setVille(props.city)
+            if (props.name) setAdresse(props.name)
           }
-        } catch { /* silent */ }
+        } catch { /* try fallback */ }
+
+        // Fallback: Nominatim
+        if (!found) {
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
+              { headers: { 'Accept-Language': 'fr' } }
+            )
+            const data = await res.json()
+            if (data.address) {
+              if (data.address.postcode) { setCp(data.address.postcode); found = true }
+              const city = data.address.city || data.address.town || data.address.village || ''
+              if (city) setVille(city)
+              const road = data.address.road || ''
+              const houseNumber = data.address.house_number || ''
+              if (road) setAdresse(houseNumber ? `${houseNumber} ${road}` : road)
+            }
+          } catch { /* silent */ }
+        }
+
+        if (!found) {
+          setGeoError('Impossible de déterminer votre adresse. Saisissez-la manuellement.')
+        }
         setGeoLoading(false)
       },
-      () => setGeoLoading(false),
-      { timeout: 10000 }
+      (err) => {
+        setGeoLoading(false)
+        if (err.code === 1) {
+          setGeoError('Vous avez refusé la géolocalisation. Autorisez-la dans les réglages de votre navigateur.')
+        } else if (err.code === 2) {
+          setGeoError('Position indisponible. Vérifiez que le GPS est activé.')
+        } else {
+          setGeoError('La géolocalisation a pris trop de temps. Saisissez votre adresse manuellement.')
+        }
+      },
+      { timeout: 15000, enableHighAccuracy: true }
     )
   }
 
@@ -160,35 +190,51 @@ export default function DemandePage() {
     await fetchMatches()
   }
 
-  // Validation
-  const canStep1 = selectedSoins.length > 0 && urgency !== '' && ordonnance !== ''
-  const canStep2 = cp.length >= 5 && timeSlots.length > 0
-  const canStep3 = form.prenom && form.nom && form.tel
+  // Validation per step
+  const canNext: Record<number, boolean> = {
+    1: selectedSoins.length > 0,
+    2: urgency !== '',
+    3: ordonnance !== '',
+    4: cp.length >= 5,
+    5: timeSlots.length > 0,
+    6: form.prenom !== '' && form.nom !== '' && form.tel !== '',
+  }
 
-  // Step labels for the stepper
-  const steps = [
-    { num: 1, label: 'Soins', icon: Stethoscope },
-    { num: 2, label: 'Lieu et date', icon: MapPin },
-    { num: 3, label: 'Patient', icon: User },
-    { num: 4, label: 'Résultats', icon: Heart },
-  ]
+  const progress = ((step - 1) / TOTAL_STEPS) * 100
 
-  // --- Step 4: Results ---
+  const nextStep = () => {
+    if (canNext[step] && step < TOTAL_STEPS) setStep(step + 1)
+  }
+
+  const prevStep = () => {
+    if (step > 1) setStep(step - 1)
+  }
+
+  // Step titles for mobile context
+  const stepTitles: Record<number, string> = {
+    1: 'Type de soins',
+    2: 'Urgence',
+    3: 'Ordonnance',
+    4: 'Localisation',
+    5: 'Disponibilités',
+    6: 'Vos coordonnées',
+  }
+
+  // --- Results page ---
   if (submitted) {
-    const soinsLabels = SOINS_CATEGORIES.flatMap(c => c.items)
+    const soinsLabels = SOINS_ITEMS
       .filter(i => selectedSoins.includes(i.id))
       .map(i => i.label)
 
     return (
-      <div className="max-w-3xl mx-auto px-4 py-10">
-        <nav className="text-sm text-[#718096] mb-6 flex items-center gap-2">
-          <Link href="/" className="hover:text-[#1E88E5]">Accueil</Link>
-          <ChevronRight className="w-3 h-3" />
-          <span className="text-[#1A202C] font-medium">Résultats de votre demande</span>
-        </nav>
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        {/* Full progress bar */}
+        <div className="w-full h-1.5 bg-[#E2E8F0] rounded-full mb-8">
+          <div className="h-full bg-green-500 rounded-full transition-all duration-500" style={{ width: '100%' }} />
+        </div>
 
         {/* Success banner */}
-        <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-8">
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-8">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
               <CheckCircle className="w-6 h-6 text-green-600" />
@@ -198,47 +244,37 @@ export default function DemandePage() {
               <p className="text-green-700 text-sm">
                 Votre demande de {soinsLabels[0]?.toLowerCase() || 'soins'} à {ville || cp} a bien été prise en compte.
                 {matchedNurses.length > 0
-                  ? ` Nous avons trouvé ${totalNurses} infirmier${totalNurses > 1 ? 's' : ''} dans votre secteur.`
+                  ? ` ${totalNurses} infirmier${totalNurses > 1 ? 's' : ''} trouvé${totalNurses > 1 ? 's' : ''} dans votre secteur.`
                   : ' Nous recherchons un infirmier disponible.'}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Recap card */}
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 mb-8">
-          <h2 className="text-lg font-bold text-[#1A202C] mb-4">Récapitulatif de votre demande</h2>
+        {/* Recap */}
+        <div className="bg-white rounded-2xl border border-[#E2E8F0] p-6 mb-8">
+          <h2 className="text-lg font-bold text-[#1A202C] mb-4">Récapitulatif</h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <div className="text-[#718096] mb-1">Soins demandés</div>
+              <div className="text-[#718096] mb-1">Soins</div>
               <div className="text-[#1A202C] font-medium">{soinsLabels.join(', ')}</div>
             </div>
             <div>
               <div className="text-[#718096] mb-1">Urgence</div>
               <div className="text-[#1A202C] font-medium">
-                {urgency === 'urgent' ? '🔴 Urgent (24h)' : urgency === 'soon' ? '🟠 Prochains jours' : '🔵 Planifié'}
+                {urgency === 'urgent' ? '🔴 Urgent' : urgency === 'soon' ? '🟠 Prochains jours' : '🔵 Planifié'}
               </div>
             </div>
             <div>
-              <div className="text-[#718096] mb-1">Localisation</div>
+              <div className="text-[#718096] mb-1">Lieu</div>
               <div className="text-[#1A202C] font-medium">{ville ? `${ville} (${cp})` : cp}</div>
-            </div>
-            <div>
-              <div className="text-[#718096] mb-1">Ordonnance</div>
-              <div className="text-[#1A202C] font-medium">
-                {ordonnance === 'oui' ? '✅ Oui' : ordonnance === 'en-cours' ? '⏳ En cours' : '❌ Non'}
-              </div>
             </div>
             <div>
               <div className="text-[#718096] mb-1">Patient</div>
               <div className="text-[#1A202C] font-medium">
                 {form.prenom} {form.nom}
-                {pourQui === 'proche' && proches.prenom && ` (pour ${proches.prenom} ${proches.nom})`}
+                {pourQui === 'proche' && proches.prenom && ` (pour ${proches.prenom})`}
               </div>
-            </div>
-            <div>
-              <div className="text-[#718096] mb-1">Téléphone</div>
-              <div className="text-[#1A202C] font-medium">{formatPhone(form.tel)}</div>
             </div>
           </div>
         </div>
@@ -247,48 +283,44 @@ export default function DemandePage() {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin w-8 h-8 border-2 border-[#1E88E5] border-t-transparent rounded-full mx-auto mb-4" />
-            <p className="text-[#718096]">Recherche d'infirmiers disponibles...</p>
+            <p className="text-[#718096]">Recherche d&apos;infirmiers disponibles...</p>
           </div>
         ) : matchedNurses.length > 0 ? (
           <div>
             <h2 className="text-lg font-bold text-[#1A202C] mb-2 flex items-center gap-2">
               <Phone className="w-5 h-5 text-green-500" />
-              {matchedNurses.length} infirmier{matchedNurses.length > 1 ? 's' : ''} les plus proches de chez vous
+              {matchedNurses.length} infirmier{matchedNurses.length > 1 ? 's' : ''} les plus proches
             </h2>
             <p className="text-sm text-[#718096] mb-6">
-              Contactez-les directement par téléphone pour organiser votre prise en charge.
-              {totalNurses > matchedNurses.length && ` (${totalNurses} IDEL au total dans le secteur)`}
+              Appelez directement pour organiser votre prise en charge.
             </p>
 
             <div className="space-y-3 mb-8">
               {matchedNurses.map(nurse => (
-                <div key={nurse.rpps} className="bg-white rounded-xl border border-[#E2E8F0] p-4 hover:border-[#1E88E5] hover:shadow-md transition-all">
+                <div key={nurse.rpps} className="bg-white rounded-2xl border border-[#E2E8F0] p-4 hover:border-[#1E88E5] hover:shadow-md transition-all">
                   <div className="flex items-center justify-between">
-                    <Link href={`/infirmier/${nurse.rpps}`} className="flex items-center gap-3 flex-1 min-w-0">
+                    <Link href={`/infirmier/${nurse.slug || nurse.rpps}`} className="flex items-center gap-3 flex-1 min-w-0">
                       <div className="w-10 h-10 rounded-full bg-[#E3F2FD] flex items-center justify-center flex-shrink-0">
                         <User className="w-5 h-5 text-[#1E88E5]" />
                       </div>
                       <div className="min-w-0">
-                        <div className="font-semibold text-[#1A202C] text-sm hover:text-[#1E88E5] transition-colors">
+                        <div className="font-semibold text-[#1A202C] text-sm">
                           {genderTitle(nurse.gender)} {nurse.firstName} {nurse.lastName}
                         </div>
                         <div className="text-xs text-[#718096] truncate flex items-center gap-1">
                           <MapPin className="w-3 h-3 flex-shrink-0" />
-                          {nurse.address}, {nurse.postalCode} {nurse.city}
+                          <span className="truncate">{nurse.postalCode} {nurse.city}</span>
                           {nurse.distance != null && (
-                            <span className="ml-1 text-[#1E88E5] font-semibold whitespace-nowrap">
-                              ({nurse.distance < 1 ? `${Math.round(nurse.distance * 1000)}m` : `${nurse.distance} km`})
+                            <span className="text-[#1E88E5] font-semibold whitespace-nowrap">
+                              · {nurse.distance < 1 ? `${Math.round(nurse.distance * 1000)}m` : `${nurse.distance} km`}
                             </span>
                           )}
                         </div>
-                        {nurse.cabinet && (
-                          <div className="text-xs text-[#718096] truncate">{nurse.cabinet}</div>
-                        )}
                       </div>
                     </Link>
                     <a
                       href={`tel:${nurse.phone.replace(/\s/g, '')}`}
-                      className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors flex-shrink-0 ml-3"
+                      className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors flex-shrink-0 ml-3"
                     >
                       <Phone className="w-4 h-4" />
                       <span className="hidden sm:inline">{formatPhone(nurse.phone)}</span>
@@ -298,355 +330,407 @@ export default function DemandePage() {
                 </div>
               ))}
             </div>
-
-            {totalNurses > matchedNurses.length && (
-              <div className="text-center mb-8">
-                <Link
-                  href={`/ville/${cp.toLowerCase()}`}
-                  className="inline-flex items-center gap-2 text-[#1E88E5] font-medium hover:underline"
-                >
-                  Voir les {totalNurses} infirmiers du secteur <ChevronRight className="w-4 h-4" />
-                </Link>
-              </div>
-            )}
           </div>
         ) : (
-          <div className="bg-[#FFFBEB] border border-[#FCD34D] rounded-xl p-6 mb-8">
+          <div className="bg-[#FFFBEB] border border-[#FCD34D] rounded-2xl p-6 mb-8">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-[#D97706] flex-shrink-0 mt-0.5" />
               <div>
-                <div className="font-semibold text-[#92400E] mb-1">Aucun infirmier trouvé dans votre secteur</div>
+                <div className="font-semibold text-[#92400E] mb-1">Aucun infirmier trouvé</div>
                 <p className="text-sm text-[#A16207]">
-                  Nous n'avons pas trouvé d'IDEL avec numéro de téléphone dans le {cp}.
-                  Essayez avec un code postal voisin ou consultez l'annuaire par département.
+                  Essayez avec un code postal voisin.
                 </p>
-                <Link href="/departement" className="text-sm text-[#1E88E5] hover:underline mt-2 inline-block">
-                  Voir les départements
-                </Link>
               </div>
             </div>
           </div>
         )}
 
-        {/* Next steps info */}
-        <div className="bg-[#E3F2FD] rounded-xl p-6 mb-8">
-          <h3 className="font-bold text-[#1A202C] mb-3 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-[#1E88E5]" />
-            Prochaines étapes
-          </h3>
-          <ol className="space-y-2 text-sm text-[#4A5568]">
-            <li className="flex items-start gap-2">
-              <span className="w-5 h-5 rounded-full bg-[#1E88E5] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
-              <span>Appelez l'un des infirmiers ci-dessus pour convenir d'un rendez-vous</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="w-5 h-5 rounded-full bg-[#1E88E5] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
-              <span>Préparez votre ordonnance et votre carte Vitale</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="w-5 h-5 rounded-full bg-[#1E88E5] text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
-              <span>L'infirmier(e) se déplace à votre domicile pour réaliser les soins</span>
-            </li>
-          </ol>
-        </div>
-
-        <div className="text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-[#1E88E5] font-medium hover:underline"
-          >
-            <ArrowLeft className="w-4 h-4" /> Retour à l'accueil
+        <div className="text-center mt-8">
+          <Link href="/" className="inline-flex items-center gap-2 text-[#1E88E5] font-medium hover:underline">
+            <ArrowLeft className="w-4 h-4" /> Retour à l&apos;accueil
           </Link>
         </div>
       </div>
     )
   }
 
-  // --- Wizard steps 1-3 ---
+  // --- Wizard: 1 section per screen ---
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10">
-      <nav className="text-sm text-[#718096] mb-6 flex items-center gap-2">
-        <Link href="/" className="hover:text-[#1E88E5]">Accueil</Link>
-        <ChevronRight className="w-3 h-3" />
-        <span className="text-[#1A202C] font-medium">Demande de soins à domicile</span>
-      </nav>
-
-      <h1 className="text-2xl font-bold text-[#1A202C] mb-1">Demande de soins à domicile</h1>
-      <p className="text-[#718096] text-sm mb-8">
-        Gratuit, sans engagement. Trouvez un infirmier disponible en quelques minutes.
-      </p>
-
-      {/* Visual stepper */}
-      <div className="flex items-center mb-10">
-        {steps.map((s, i) => (
-          <div key={s.num} className="flex items-center flex-1">
-            <div className="flex flex-col items-center">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                  step > s.num
-                    ? 'bg-green-500 text-white'
-                    : step === s.num
-                      ? 'bg-[#1E88E5] text-white shadow-lg shadow-blue-200'
-                      : 'bg-[#E2E8F0] text-[#A0AEC0]'
-                }`}
-              >
-                {step > s.num ? <CheckCircle className="w-5 h-5" /> : <s.icon className="w-5 h-5" />}
-              </div>
-              <span className={`text-xs mt-1.5 hidden sm:block ${step >= s.num ? 'text-[#1A202C] font-medium' : 'text-[#A0AEC0]'}`}>
-                {s.label}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-2 ${step > s.num ? 'bg-green-500' : 'bg-[#E2E8F0]'}`} />
-            )}
+    <div className="min-h-screen bg-[#F7FAFC] dark:bg-gray-900">
+      {/* Sticky top bar with progress */}
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-[#E2E8F0] dark:border-gray-700">
+        <div className="max-w-2xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <button
+              onClick={prevStep}
+              disabled={step === 1}
+              className="text-[#718096] hover:text-[#1A202C] disabled:opacity-0 transition-all"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <span className="text-sm font-medium text-[#4A5568] dark:text-gray-300">
+              {stepTitles[step]}
+            </span>
+            <span className="text-xs text-[#A0AEC0]">
+              {step}/{TOTAL_STEPS}
+            </span>
           </div>
-        ))}
+          {/* Progress bar */}
+          <div className="w-full h-1.5 bg-[#E2E8F0] dark:bg-gray-600 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#1E88E5] rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* STEP 1: Soins + Urgence + Ordonnance */}
-      {step === 1 && (
-        <div className="space-y-8">
-          {/* Care type selection */}
-          <div>
-            <h2 className="text-lg font-bold text-[#1A202C] mb-4 flex items-center gap-2">
-              <Stethoscope className="w-5 h-5 text-[#1E88E5]" /> De quel(s) soin(s) avez-vous besoin ?
-            </h2>
-            {SOINS_CATEGORIES.map(cat => (
-              <div key={cat.category} className="mb-4">
-                <div className="text-sm font-semibold text-[#718096] mb-2 flex items-center gap-2">
-                  <span>{cat.icon}</span> {cat.category}
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {cat.items.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => toggleSoin(item.id)}
-                      className={`text-left px-4 py-3 rounded-xl border text-sm transition-all ${
-                        selectedSoins.includes(item.id)
-                          ? 'border-[#1E88E5] bg-[#E3F2FD] text-[#1565C0] font-medium'
-                          : 'border-[#E2E8F0] bg-white text-[#4A5568] hover:border-[#90CAF9]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span>{item.label}</span>
-                        {selectedSoins.includes(item.id) && <CheckCircle className="w-4 h-4 text-[#1E88E5] flex-shrink-0 ml-2" />}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="max-w-2xl mx-auto px-4 py-8">
 
-          {/* Urgency */}
-          <div>
-            <h2 className="text-lg font-bold text-[#1A202C] mb-3 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-[#1E88E5]" /> Quel est le niveau d'urgence ?
-            </h2>
-            <div className="space-y-2">
+        {/* ============ STEP 1: Type de soins ============ */}
+        {step === 1 && (
+          <div className="space-y-4">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 rounded-full bg-[#E3F2FD] flex items-center justify-center mx-auto mb-3">
+                <Stethoscope className="w-7 h-7 text-[#1E88E5]" />
+              </div>
+              <h1 className="text-xl font-bold text-[#1A202C] dark:text-gray-100">
+                De quel soin avez-vous besoin ?
+              </h1>
+              <p className="text-sm text-[#718096] dark:text-gray-400 mt-1">
+                Sélectionnez un ou plusieurs soins
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {SOINS_ITEMS.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => toggleSoin(item.id)}
+                  className={`text-left px-4 py-3.5 rounded-2xl border transition-all ${
+                    selectedSoins.includes(item.id)
+                      ? 'border-[#1E88E5] bg-[#E3F2FD] dark:bg-blue-900/30 ring-1 ring-[#1E88E5]'
+                      : 'border-[#E2E8F0] dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-[#90CAF9]'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{item.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-sm font-medium ${selectedSoins.includes(item.id) ? 'text-[#1565C0] dark:text-blue-300' : 'text-[#1A202C] dark:text-gray-100'}`}>
+                        {item.label}
+                      </div>
+                      <div className="text-xs text-[#718096] dark:text-gray-400 truncate">{item.desc}</div>
+                    </div>
+                    {selectedSoins.includes(item.id) && (
+                      <CheckCircle className="w-5 h-5 text-[#1E88E5] flex-shrink-0" />
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="pt-4">
+              <button
+                onClick={nextStep}
+                disabled={!canNext[1]}
+                className={`w-full py-4 rounded-2xl font-semibold text-base transition-all ${
+                  canNext[1]
+                    ? 'bg-[#1E88E5] hover:bg-[#1565C0] text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/30'
+                    : 'bg-[#E2E8F0] dark:bg-gray-700 text-[#A0AEC0] cursor-not-allowed'
+                }`}
+              >
+                Continuer
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ============ STEP 2: Urgence ============ */}
+        {step === 2 && (
+          <div className="space-y-4">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 rounded-full bg-[#E3F2FD] flex items-center justify-center mx-auto mb-3">
+                <Clock className="w-7 h-7 text-[#1E88E5]" />
+              </div>
+              <h1 className="text-xl font-bold text-[#1A202C] dark:text-gray-100">
+                C&apos;est urgent ?
+              </h1>
+              <p className="text-sm text-[#718096] dark:text-gray-400 mt-1">
+                Cela nous aide à prioriser votre demande
+              </p>
+            </div>
+
+            <div className="space-y-3">
               {URGENCY_OPTIONS.map(opt => (
                 <button
                   key={opt.id}
-                  onClick={() => setUrgency(opt.id)}
-                  className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all ${
+                  onClick={() => { setUrgency(opt.id); setTimeout(() => setStep(3), 300) }}
+                  className={`w-full text-left px-5 py-4 rounded-2xl border transition-all ${
                     urgency === opt.id
                       ? opt.color === 'red'
-                        ? 'border-red-400 bg-red-50 text-red-700 font-medium'
+                        ? 'border-red-400 bg-red-50 dark:bg-red-900/20 ring-1 ring-red-400'
                         : opt.color === 'orange'
-                          ? 'border-orange-400 bg-orange-50 text-orange-700 font-medium'
-                          : 'border-[#1E88E5] bg-[#E3F2FD] text-[#1565C0] font-medium'
-                      : 'border-[#E2E8F0] bg-white text-[#4A5568] hover:border-[#90CAF9]'
+                          ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20 ring-1 ring-orange-400'
+                          : 'border-[#1E88E5] bg-[#E3F2FD] dark:bg-blue-900/20 ring-1 ring-[#1E88E5]'
+                      : 'border-[#E2E8F0] dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-[#90CAF9]'
                   }`}
                 >
-                  {opt.label}
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl">{opt.icon}</span>
+                    <div>
+                      <div className={`font-semibold ${urgency === opt.id ? 'text-[#1A202C] dark:text-gray-100' : 'text-[#1A202C] dark:text-gray-100'}`}>
+                        {opt.label}
+                      </div>
+                      <div className="text-xs text-[#718096] dark:text-gray-400">{opt.desc}</div>
+                    </div>
+                  </div>
                 </button>
               ))}
             </div>
-          </div>
 
-          {/* Ordonnance */}
-          <div>
-            <h2 className="text-lg font-bold text-[#1A202C] mb-3 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-[#1E88E5]" /> Avez-vous une ordonnance ?
-            </h2>
-            <div className="grid grid-cols-3 gap-2">
+            {urgency && (
+              <div className="pt-4">
+                <button
+                  onClick={nextStep}
+                  className="w-full py-4 rounded-2xl font-semibold text-base bg-[#1E88E5] hover:bg-[#1565C0] text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/30 transition-all"
+                >
+                  Continuer
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ============ STEP 3: Ordonnance ============ */}
+        {step === 3 && (
+          <div className="space-y-4">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 rounded-full bg-[#E3F2FD] flex items-center justify-center mx-auto mb-3">
+                <FileText className="w-7 h-7 text-[#1E88E5]" />
+              </div>
+              <h1 className="text-xl font-bold text-[#1A202C] dark:text-gray-100">
+                Avez-vous une ordonnance ?
+              </h1>
+              <p className="text-sm text-[#718096] dark:text-gray-400 mt-1">
+                L&apos;infirmier(e) pourra vous guider si besoin
+              </p>
+            </div>
+
+            <div className="space-y-3">
               {[
-                { id: 'oui', label: 'Oui', icon: '✅' },
-                { id: 'en-cours', label: 'En cours', icon: '⏳' },
-                { id: 'non', label: 'Pas encore', icon: '❌' },
+                { id: 'oui', label: 'Oui, j\'ai une ordonnance', icon: '✅', desc: 'Prescrite par mon médecin' },
+                { id: 'en-cours', label: 'C\'est en cours', icon: '⏳', desc: 'J\'attends de la recevoir' },
+                { id: 'non', label: 'Pas encore', icon: '📋', desc: 'Je n\'en ai pas pour le moment' },
               ].map(opt => (
                 <button
                   key={opt.id}
-                  onClick={() => setOrdonnance(opt.id)}
-                  className={`text-center px-4 py-3 rounded-xl border text-sm transition-all ${
+                  onClick={() => { setOrdonnance(opt.id); setTimeout(() => setStep(4), 300) }}
+                  className={`w-full text-left px-5 py-4 rounded-2xl border transition-all ${
                     ordonnance === opt.id
-                      ? 'border-[#1E88E5] bg-[#E3F2FD] text-[#1565C0] font-medium'
-                      : 'border-[#E2E8F0] bg-white text-[#4A5568] hover:border-[#90CAF9]'
+                      ? 'border-[#1E88E5] bg-[#E3F2FD] dark:bg-blue-900/20 ring-1 ring-[#1E88E5]'
+                      : 'border-[#E2E8F0] dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-[#90CAF9]'
                   }`}
                 >
-                  <div className="text-lg mb-1">{opt.icon}</div>
-                  {opt.label}
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl">{opt.icon}</span>
+                    <div>
+                      <div className="font-semibold text-[#1A202C] dark:text-gray-100">{opt.label}</div>
+                      <div className="text-xs text-[#718096] dark:text-gray-400">{opt.desc}</div>
+                    </div>
+                  </div>
                 </button>
               ))}
             </div>
+
             {ordonnance === 'non' && (
-              <p className="text-xs text-[#92400E] mt-2 bg-[#FFFBEB] border border-[#FCD34D] rounded-lg p-3">
-                Pas de souci ! L'infirmier(e) pourra vous guider pour obtenir une ordonnance auprès de votre médecin.
+              <p className="text-xs text-[#92400E] dark:text-yellow-300 bg-[#FFFBEB] dark:bg-yellow-900/20 border border-[#FCD34D] dark:border-yellow-700 rounded-xl p-3">
+                Pas de souci ! L&apos;infirmier(e) pourra vous guider pour obtenir une ordonnance.
               </p>
             )}
+
+            {ordonnance && (
+              <div className="pt-4">
+                <button
+                  onClick={nextStep}
+                  className="w-full py-4 rounded-2xl font-semibold text-base bg-[#1E88E5] hover:bg-[#1565C0] text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/30 transition-all"
+                >
+                  Continuer
+                </button>
+              </div>
+            )}
           </div>
+        )}
 
-          <button
-            onClick={() => canStep1 && setStep(2)}
-            disabled={!canStep1}
-            className={`w-full py-3.5 rounded-xl font-semibold text-base transition-colors ${
-              canStep1 ? 'bg-[#1E88E5] hover:bg-[#1565C0] text-white' : 'bg-[#E2E8F0] text-[#A0AEC0] cursor-not-allowed'
-            }`}
-          >
-            Continuer
-          </button>
-        </div>
-      )}
+        {/* ============ STEP 4: Localisation ============ */}
+        {step === 4 && (
+          <div className="space-y-4">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 rounded-full bg-[#E3F2FD] flex items-center justify-center mx-auto mb-3">
+                <MapPin className="w-7 h-7 text-[#1E88E5]" />
+              </div>
+              <h1 className="text-xl font-bold text-[#1A202C] dark:text-gray-100">
+                Où souhaitez-vous les soins ?
+              </h1>
+            </div>
 
-      {/* STEP 2: Location + Date + Time */}
-      {step === 2 && (
-        <div className="space-y-8">
-          <div>
-            <h2 className="text-lg font-bold text-[#1A202C] mb-4 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-[#1E88E5]" /> Où souhaitez-vous recevoir les soins ?
-            </h2>
-
-            {/* Geoloc button */}
+            {/* Géolocalisation */}
             <button
               onClick={handleGeolocate}
               disabled={geoLoading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-[#1E88E5] bg-[#E3F2FD] text-[#1565C0] text-sm font-medium hover:bg-[#BBDEFB] transition-colors mb-4"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl border-2 border-dashed border-[#1E88E5] bg-[#E3F2FD] dark:bg-blue-900/20 text-[#1565C0] dark:text-blue-300 text-sm font-medium hover:bg-[#BBDEFB] transition-colors"
             >
               <MapPin className="w-4 h-4" />
-              {geoLoading ? 'Localisation en cours...' : 'Me géolocaliser automatiquement'}
+              {geoLoading ? 'Localisation en cours...' : '📍 Me géolocaliser automatiquement'}
             </button>
 
-            <div className="text-xs text-[#A0AEC0] text-center mb-4">ou saisissez manuellement</div>
+            {geoError && (
+              <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3">
+                {geoError}
+              </p>
+            )}
+
+            <div className="text-xs text-[#A0AEC0] text-center">ou saisissez manuellement</div>
 
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-[#718096] mb-1 block">Adresse du patient</label>
+                <label className="text-xs font-medium text-[#718096] dark:text-gray-400 mb-1.5 block">Adresse du patient</label>
                 <input
                   type="text"
                   value={adresse}
                   onChange={e => setAdresse(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100"
+                  className="w-full px-4 py-3.5 rounded-2xl border border-[#E2E8F0] dark:border-gray-600 text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100 dark:bg-gray-800 dark:text-gray-100"
                   placeholder="12 rue de la Paix"
                 />
-                <p className="text-xs text-[#A0AEC0] mt-1">Permet de trier les infirmiers par proximité</p>
+                <p className="text-xs text-[#A0AEC0] mt-1">Pour trouver les infirmiers les plus proches</p>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-2">
-                  <label className="text-xs text-[#718096] mb-1 block">Ville</label>
+                  <label className="text-xs font-medium text-[#718096] dark:text-gray-400 mb-1.5 block">Ville</label>
                   <input
                     type="text"
                     value={ville}
                     onChange={e => setVille(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100"
-                    placeholder="Paris, Lyon, Marseille..."
+                    className="w-full px-4 py-3.5 rounded-2xl border border-[#E2E8F0] dark:border-gray-600 text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100 dark:bg-gray-800 dark:text-gray-100"
+                    placeholder="Paris"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-[#718096] mb-1 block">Code postal *</label>
+                  <label className="text-xs font-medium text-[#718096] dark:text-gray-400 mb-1.5 block">Code postal *</label>
                   <input
                     type="text"
                     value={cp}
                     onChange={e => setCp(e.target.value.replace(/\D/g, '').slice(0, 5))}
-                    className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100"
-                    placeholder="75015"
+                    className="w-full px-4 py-3.5 rounded-2xl border border-[#E2E8F0] dark:border-gray-600 text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100 dark:bg-gray-800 dark:text-gray-100"
+                    placeholder="75009"
                     maxLength={5}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Lieu */}
-            <div className="grid grid-cols-2 gap-2 mt-4">
-              {[
-                { id: 'domicile', label: '🏠 À domicile' },
-                { id: 'cabinet', label: '🏥 Au cabinet' },
-              ].map(opt => (
-                <button
-                  key={opt.id}
-                  onClick={() => setLieu(opt.id)}
-                  className={`text-center px-4 py-3 rounded-xl border text-sm transition-all ${
-                    lieu === opt.id
-                      ? 'border-[#1E88E5] bg-[#E3F2FD] text-[#1565C0] font-medium'
-                      : 'border-[#E2E8F0] bg-white text-[#4A5568] hover:border-[#90CAF9]'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            <div className="pt-4">
+              <button
+                onClick={nextStep}
+                disabled={!canNext[4]}
+                className={`w-full py-4 rounded-2xl font-semibold text-base transition-all ${
+                  canNext[4]
+                    ? 'bg-[#1E88E5] hover:bg-[#1565C0] text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/30'
+                    : 'bg-[#E2E8F0] dark:bg-gray-700 text-[#A0AEC0] cursor-not-allowed'
+                }`}
+              >
+                Continuer
+              </button>
             </div>
           </div>
+        )}
 
-          {/* Date */}
-          <div>
-            <h2 className="text-lg font-bold text-[#1A202C] mb-3 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-[#1E88E5]" /> Quand souhaitez-vous commencer ?
-            </h2>
-            <input
-              type="date"
-              value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-              className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
+        {/* ============ STEP 5: Date et créneaux ============ */}
+        {step === 5 && (
+          <div className="space-y-4">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 rounded-full bg-[#E3F2FD] flex items-center justify-center mx-auto mb-3">
+                <Calendar className="w-7 h-7 text-[#1E88E5]" />
+              </div>
+              <h1 className="text-xl font-bold text-[#1A202C] dark:text-gray-100">
+                Quand êtes-vous disponible ?
+              </h1>
+              <p className="text-sm text-[#718096] dark:text-gray-400 mt-1">
+                Choisissez vos créneaux préférés
+              </p>
+            </div>
 
-          {/* Time slots */}
-          <div>
-            <h2 className="text-lg font-bold text-[#1A202C] mb-3 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-[#1E88E5]" /> Créneaux préférés
-            </h2>
-            <div className="grid grid-cols-2 gap-2">
+            {/* Date */}
+            <div>
+              <label className="text-xs font-medium text-[#718096] dark:text-gray-400 mb-1.5 block">Date de début souhaitée</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full px-4 py-3.5 rounded-2xl border border-[#E2E8F0] dark:border-gray-600 text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100 dark:bg-gray-800 dark:text-gray-100"
+              />
+            </div>
+
+            {/* Time slots */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-[#718096] dark:text-gray-400 mb-1.5 block">Créneaux préférés *</label>
               {TIME_SLOTS.map(slot => (
                 <button
                   key={slot.id}
                   onClick={() => toggleTime(slot.id)}
-                  className={`text-left px-4 py-3 rounded-xl border text-sm transition-all ${
+                  className={`w-full text-left px-5 py-3.5 rounded-2xl border transition-all ${
                     timeSlots.includes(slot.id)
-                      ? 'border-[#1E88E5] bg-[#E3F2FD] text-[#1565C0] font-medium'
-                      : 'border-[#E2E8F0] bg-white text-[#4A5568] hover:border-[#90CAF9]'
+                      ? 'border-[#1E88E5] bg-[#E3F2FD] dark:bg-blue-900/20 ring-1 ring-[#1E88E5]'
+                      : 'border-[#E2E8F0] dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-[#90CAF9]'
                   }`}
                 >
-                  <span className="mr-2">{slot.icon}</span> {slot.label}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{slot.icon}</span>
+                      <div>
+                        <div className="text-sm font-medium text-[#1A202C] dark:text-gray-100">{slot.label}</div>
+                        <div className="text-xs text-[#718096] dark:text-gray-400">{slot.desc}</div>
+                      </div>
+                    </div>
+                    {timeSlots.includes(slot.id) && <CheckCircle className="w-5 h-5 text-[#1E88E5]" />}
+                  </div>
                 </button>
               ))}
             </div>
-          </div>
 
-          <div className="flex gap-3">
-            <button onClick={() => setStep(1)} className="px-6 py-3.5 rounded-xl font-semibold border border-[#E2E8F0] text-[#4A5568] hover:bg-[#F7FAFC] transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => canStep2 && setStep(3)}
-              disabled={!canStep2}
-              className={`flex-1 py-3.5 rounded-xl font-semibold text-base transition-colors ${
-                canStep2 ? 'bg-[#1E88E5] hover:bg-[#1565C0] text-white' : 'bg-[#E2E8F0] text-[#A0AEC0] cursor-not-allowed'
-              }`}
-            >
-              Continuer
-            </button>
+            <div className="pt-4">
+              <button
+                onClick={nextStep}
+                disabled={!canNext[5]}
+                className={`w-full py-4 rounded-2xl font-semibold text-base transition-all ${
+                  canNext[5]
+                    ? 'bg-[#1E88E5] hover:bg-[#1565C0] text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/30'
+                    : 'bg-[#E2E8F0] dark:bg-gray-700 text-[#A0AEC0] cursor-not-allowed'
+                }`}
+              >
+                Dernière étape
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* STEP 3: Patient info */}
-      {step === 3 && (
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-lg font-bold text-[#1A202C] mb-4 flex items-center gap-2">
-              <User className="w-5 h-5 text-[#1E88E5]" /> Pour qui est la demande ?
-            </h2>
-            <div className="grid grid-cols-2 gap-2 mb-6">
+        {/* ============ STEP 6: Coordonnées ============ */}
+        {step === 6 && (
+          <div className="space-y-4">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 rounded-full bg-[#E3F2FD] flex items-center justify-center mx-auto mb-3">
+                <User className="w-7 h-7 text-[#1E88E5]" />
+              </div>
+              <h1 className="text-xl font-bold text-[#1A202C] dark:text-gray-100">
+                Dernière étape !
+              </h1>
+              <p className="text-sm text-[#718096] dark:text-gray-400 mt-1">
+                Pour que l&apos;infirmier(e) puisse vous contacter
+              </p>
+            </div>
+
+            {/* Pour qui */}
+            <div className="grid grid-cols-2 gap-2">
               {[
                 { id: 'moi', label: '👤 Pour moi' },
                 { id: 'proche', label: '👥 Pour un proche' },
@@ -654,127 +738,92 @@ export default function DemandePage() {
                 <button
                   key={opt.id}
                   onClick={() => setPourQui(opt.id)}
-                  className={`text-center px-4 py-3 rounded-xl border text-sm transition-all ${
+                  className={`text-center px-4 py-3 rounded-2xl border text-sm transition-all ${
                     pourQui === opt.id
-                      ? 'border-[#1E88E5] bg-[#E3F2FD] text-[#1565C0] font-medium'
-                      : 'border-[#E2E8F0] bg-white text-[#4A5568] hover:border-[#90CAF9]'
+                      ? 'border-[#1E88E5] bg-[#E3F2FD] dark:bg-blue-900/20 text-[#1565C0] font-medium ring-1 ring-[#1E88E5]'
+                      : 'border-[#E2E8F0] dark:border-gray-600 bg-white dark:bg-gray-800 text-[#4A5568] dark:text-gray-300 hover:border-[#90CAF9]'
                   }`}
                 >
                   {opt.label}
                 </button>
               ))}
             </div>
-          </div>
 
-          {/* Contact info */}
-          <div>
-            <h2 className="text-sm font-semibold text-[#718096] mb-3 uppercase tracking-wide">
-              {pourQui === 'proche' ? 'Vos coordonnées (demandeur)' : 'Vos coordonnées'}
-            </h2>
+            {/* Coordonnées */}
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-[#718096] mb-1 block">Prénom *</label>
+                  <label className="text-xs font-medium text-[#718096] dark:text-gray-400 mb-1.5 block">Prénom *</label>
                   <input type="text" value={form.prenom} onChange={e => setForm({ ...form, prenom: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-4 py-3.5 rounded-2xl border border-[#E2E8F0] dark:border-gray-600 text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100 dark:bg-gray-800 dark:text-gray-100"
                     placeholder="Jean" />
                 </div>
                 <div>
-                  <label className="text-xs text-[#718096] mb-1 block">Nom *</label>
+                  <label className="text-xs font-medium text-[#718096] dark:text-gray-400 mb-1.5 block">Nom *</label>
                   <input type="text" value={form.nom} onChange={e => setForm({ ...form, nom: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100"
+                    className="w-full px-4 py-3.5 rounded-2xl border border-[#E2E8F0] dark:border-gray-600 text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100 dark:bg-gray-800 dark:text-gray-100"
                     placeholder="Dupont" />
                 </div>
               </div>
               <div>
-                <label className="text-xs text-[#718096] mb-1 block flex items-center gap-1">
+                <label className="text-xs font-medium text-[#718096] dark:text-gray-400 mb-1.5 block flex items-center gap-1">
                   <Phone className="w-3 h-3" /> Téléphone *
                 </label>
                 <input type="tel" value={form.tel} onChange={e => setForm({ ...form, tel: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100"
+                  className="w-full px-4 py-3.5 rounded-2xl border border-[#E2E8F0] dark:border-gray-600 text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100 dark:bg-gray-800 dark:text-gray-100"
                   placeholder="06 12 34 56 78" />
               </div>
-              <div>
-                <label className="text-xs text-[#718096] mb-1 block">Email (optionnel)</label>
-                <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100"
-                  placeholder="jean@exemple.fr" />
-              </div>
             </div>
-          </div>
 
-          {/* Proche info */}
-          {pourQui === 'proche' && (
-            <div>
-              <h2 className="text-sm font-semibold text-[#718096] mb-3 uppercase tracking-wide">Informations du patient</h2>
-              <div className="space-y-3">
+            {/* Proche info */}
+            {pourQui === 'proche' && (
+              <div className="space-y-3 bg-[#F7FAFC] dark:bg-gray-800/50 rounded-2xl p-4 border border-[#E2E8F0] dark:border-gray-700">
+                <div className="text-xs font-semibold text-[#718096] dark:text-gray-400 uppercase tracking-wide">Patient</div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-[#718096] mb-1 block">Prénom du patient</label>
-                    <input type="text" value={proches.prenom} onChange={e => setProches({ ...proches, prenom: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100"
-                      placeholder="Marie" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-[#718096] mb-1 block">Nom du patient</label>
-                    <input type="text" value={proches.nom} onChange={e => setProches({ ...proches, nom: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100"
-                      placeholder="Dupont" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-[#718096] mb-1 block">Lien avec le patient</label>
-                  <select value={proches.lien} onChange={e => setProches({ ...proches, lien: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100 bg-white">
-                    <option value="">Sélectionnez</option>
-                    <option value="enfant">Enfant</option>
-                    <option value="parent">Parent</option>
-                    <option value="conjoint">Conjoint(e)</option>
-                    <option value="ami">Ami(e)</option>
-                    <option value="aidant">Aidant professionnel</option>
-                    <option value="autre">Autre</option>
-                  </select>
+                  <input type="text" value={proches.prenom} onChange={e => setProches({ ...proches, prenom: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] dark:border-gray-600 text-sm focus:outline-none focus:border-[#1E88E5] dark:bg-gray-800 dark:text-gray-100"
+                    placeholder="Prénom du patient" />
+                  <input type="text" value={proches.nom} onChange={e => setProches({ ...proches, nom: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] dark:border-gray-600 text-sm focus:outline-none focus:border-[#1E88E5] dark:bg-gray-800 dark:text-gray-100"
+                    placeholder="Nom du patient" />
                 </div>
               </div>
+            )}
+
+            {/* Message optionnel */}
+            <div>
+              <label className="text-xs font-medium text-[#718096] dark:text-gray-400 mb-1.5 block">Précisions (optionnel)</label>
+              <textarea value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
+                className="w-full px-4 py-3 rounded-2xl border border-[#E2E8F0] dark:border-gray-600 text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100 h-20 resize-none dark:bg-gray-800 dark:text-gray-100"
+                placeholder="Étage, digicode, contraintes horaires..." />
             </div>
-          )}
 
-          {/* Message */}
-          <div>
-            <label className="text-xs text-[#718096] mb-1 block">Informations complémentaires (optionnel)</label>
-            <textarea value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl border border-[#E2E8F0] text-sm focus:outline-none focus:border-[#1E88E5] focus:ring-2 focus:ring-blue-100 h-20 resize-none"
-              placeholder="Précisions sur les soins, contraintes d'accès, étage, digicode..." />
-          </div>
+            {/* Trust badges */}
+            <div className="flex items-center justify-center gap-4 text-xs text-[#718096] dark:text-gray-400">
+              <div className="flex items-center gap-1"><Shield className="w-3 h-3 text-green-500" /> Sécurisé</div>
+              <div className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-green-500" /> Gratuit</div>
+              <div className="flex items-center gap-1"><Phone className="w-3 h-3 text-green-500" /> Sans engagement</div>
+            </div>
 
-          {/* Trust badges */}
-          <div className="flex items-center justify-center gap-4 text-xs text-[#718096]">
-            <div className="flex items-center gap-1"><Shield className="w-3 h-3 text-green-500" /> Données sécurisées</div>
-            <div className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-green-500" /> 100% gratuit</div>
-            <div className="flex items-center gap-1"><Phone className="w-3 h-3 text-green-500" /> Sans engagement</div>
-          </div>
-
-          <div className="flex gap-3">
-            <button onClick={() => setStep(2)} className="px-6 py-3.5 rounded-xl font-semibold border border-[#E2E8F0] text-[#4A5568] hover:bg-[#F7FAFC] transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-            </button>
             <button
-              onClick={() => canStep3 && handleSubmit()}
-              disabled={!canStep3}
-              className={`flex-1 py-3.5 rounded-xl font-semibold text-base transition-colors ${
-                canStep3 ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-[#E2E8F0] text-[#A0AEC0] cursor-not-allowed'
+              onClick={() => canNext[6] && handleSubmit()}
+              disabled={!canNext[6]}
+              className={`w-full py-4 rounded-2xl font-semibold text-base transition-all ${
+                canNext[6]
+                  ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-200 dark:shadow-green-900/30'
+                  : 'bg-[#E2E8F0] dark:bg-gray-700 text-[#A0AEC0] cursor-not-allowed'
               }`}
             >
-              Trouver un infirmier disponible
+              🔍 Trouver un infirmier disponible
             </button>
-          </div>
 
-          <p className="text-xs text-[#A0AEC0] text-center">
-            En soumettant ce formulaire, vous acceptez d'être recontacté par un professionnel de santé.
-            Vos données sont traitées conformément à notre <Link href="/confidentialite" className="underline">politique de confidentialité</Link>.
-          </p>
-        </div>
-      )}
+            <p className="text-xs text-[#A0AEC0] text-center">
+              En continuant, vous acceptez d&apos;être contacté par un professionnel de santé.{' '}
+              <Link href="/confidentialite" className="underline">Confidentialité</Link>
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
